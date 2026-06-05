@@ -1,4 +1,4 @@
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.DTOs;
 using WinWigApp.Domain.Entities;
 using AutoMapper;
@@ -7,12 +7,12 @@ namespace WinWigApp.Application.Services;
 
 public class WalletService : IWalletService
 {
-    private readonly WinWigDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public WalletService(WinWigDbContext context, IMapper mapper)
+    public WalletService(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
@@ -26,7 +26,7 @@ public class WalletService : IWalletService
             throw new InvalidOperationException("Metoda płatności jest wymagana");
 
         // Get user
-        var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
             throw new InvalidOperationException("Użytkownik nie znaleziony");
 
@@ -43,8 +43,8 @@ public class WalletService : IWalletService
             Timestamp = DateTime.UtcNow
         };
 
-        _context.Deposits.Add(deposit);
-        await _context.SaveChangesAsync();
+        await _unitOfWork.Deposits.AddAsync(deposit);
+        await _unitOfWork.SaveChangesAsync();
 
         var response = _mapper.Map<DepositResponse>(deposit);
         response.NewBalance = user.Balance;
@@ -53,17 +53,14 @@ public class WalletService : IWalletService
 
     public async Task<List<DepositsResponse>> GetDepositsAsync(Guid userId)
     {
-        var deposits = _context.Deposits
-            .Where(d => d.UserId == userId)
-            .OrderByDescending(d => d.Timestamp)
-            .ToList();
-
-        return _mapper.Map<List<DepositsResponse>>(deposits);
+        var deposits = await _unitOfWork.Deposits.FindAsync(d => d.UserId == userId);
+        var sortedDeposits = deposits.OrderByDescending(d => d.Timestamp).ToList();
+        return _mapper.Map<List<DepositsResponse>>(sortedDeposits);
     }
 
     public async Task<BalanceResponse> GetBalanceAsync(Guid userId)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
             throw new InvalidOperationException("Użytkownik nie znaleziony");
 

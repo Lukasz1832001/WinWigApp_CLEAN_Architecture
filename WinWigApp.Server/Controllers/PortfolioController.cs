@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using WinWigApp.Server.Data;
-using WinWigApp.Server.DTOs;
+using WinWigApp.Infrastructure.Data;
+using WinWigApp.Application.DTOs;
 using System.Linq;
 using AutoMapper;
 

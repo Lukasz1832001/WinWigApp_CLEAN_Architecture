@@ -1,20 +1,20 @@
 using WinWigApp.Application.DTOs;
 using WinWigApp.Domain.Entities;
 using AutoMapper;
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Infrastructure.UnitOfWork;
 
 namespace WinWigApp.Application.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly WinWigDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ITokenService _tokenService;
     private readonly ISeederService _seederService;
     private readonly IMapper _mapper;
 
-    public AuthService(WinWigDbContext context, ITokenService tokenService, ISeederService seederService, IMapper mapper)
+    public AuthService(IUnitOfWork unitOfWork, ITokenService tokenService, ISeederService seederService, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _tokenService = tokenService;
         _seederService = seederService;
         _mapper = mapper;
@@ -23,7 +23,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         // Check if user already exists
-        var existingUser = _context.Users.FirstOrDefault(u => u.Email == request.Email);
+        var existingUser = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (existingUser != null)
             throw new InvalidOperationException("Użytkownik z tym emailem już istnieje");
 
@@ -39,8 +39,8 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        await _unitOfWork.Users.AddAsync(user);
+        await _unitOfWork.SaveChangesAsync();
 
         // Seed default strategies for new user
         await _seederService.SeedDefaultStrategiesAsync(user.Id);
@@ -57,7 +57,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         // Find user by email
-        var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (user == null)
             throw new InvalidOperationException("Zły email lub hasło");
 

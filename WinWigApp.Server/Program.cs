@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using WinWigApp.Infrastructure.Data;
+using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.Services;
 using WinWigApp.Server.Middleware;
 using WinWigApp.Server.Filters;
@@ -16,6 +17,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? "Data Source=WinWigApp.db";
 builder.Services.AddDbContext<WinWigDbContext>(options =>
     options.UseSqlite(connectionString));
+
+// Register Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register services
 builder.Services.AddScoped<IAuthService, AuthService>();

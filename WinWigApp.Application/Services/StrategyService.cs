@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.DTOs;
 using WinWigApp.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -9,13 +8,13 @@ namespace WinWigApp.Application.Services;
 
 public class StrategyService : IStrategyService
 {
-    private readonly WinWigDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<StrategyService> _logger;
     private readonly IMapper _mapper;
 
-    public StrategyService(WinWigDbContext context, ILogger<StrategyService> logger, IMapper mapper)
+    public StrategyService(IUnitOfWork unitOfWork, ILogger<StrategyService> logger, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
     }
@@ -41,8 +40,8 @@ public class StrategyService : IStrategyService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Strategies.Add(strategy);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Strategies.AddAsync(strategy);
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Strategy {StrategyId} created for user {UserId}", strategy.Id, userId);
 
@@ -59,12 +58,9 @@ public class StrategyService : IStrategyService
     {
         try
         {
-            var strategies = await _context.Strategies
-                .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
-
-            return _mapper.Map<List<StrategyResponse>>(strategies);
+            var strategies = await _unitOfWork.Strategies.GetByUserIdAsync(userId);
+            var sortedStrategies = strategies.OrderByDescending(s => s.CreatedAt).ToList();
+            return _mapper.Map<List<StrategyResponse>>(sortedStrategies);
         }
         catch (Exception ex)
         {
@@ -77,8 +73,7 @@ public class StrategyService : IStrategyService
     {
         try
         {
-            var strategy = await _context.Strategies
-                .FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
+            var strategy = await _unitOfWork.Strategies.FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
                 ?? throw new InvalidOperationException("Strategia nie znaleziona");
 
             return _mapper.Map<StrategyResponse>(strategy);
@@ -96,8 +91,7 @@ public class StrategyService : IStrategyService
         {
             ValidateStrategyRequest(request);
 
-            var strategy = await _context.Strategies
-                .FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
+            var strategy = await _unitOfWork.Strategies.FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
                 ?? throw new InvalidOperationException("Strategia nie znaleziona");
 
             strategy.Name = request.Name;
@@ -108,8 +102,8 @@ public class StrategyService : IStrategyService
             strategy.MacdBuy = request.MacdBuy;
             strategy.Sma50Above200 = request.Sma50Above200;
 
-            _context.Strategies.Update(strategy);
-            await _context.SaveChangesAsync();
+            _unitOfWork.Strategies.Update(strategy);
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Strategy {StrategyId} updated for user {UserId}", strategyId, userId);
 
@@ -130,12 +124,11 @@ public class StrategyService : IStrategyService
     {
         try
         {
-            var strategy = await _context.Strategies
-                .FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
+            var strategy = await _unitOfWork.Strategies.FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
                 ?? throw new InvalidOperationException("Strategia nie znaleziona");
 
-            _context.Strategies.Remove(strategy);
-            await _context.SaveChangesAsync();
+            _unitOfWork.Strategies.Remove(strategy);
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Strategy {StrategyId} deleted for user {UserId}", strategyId, userId);
 
@@ -156,13 +149,12 @@ public class StrategyService : IStrategyService
     {
         try
         {
-            var strategy = await _context.Strategies
-                .FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
+            var strategy = await _unitOfWork.Strategies.FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
                 ?? throw new InvalidOperationException("Strategia nie znaleziona");
 
             strategy.IsActive = !strategy.IsActive;
-            _context.Strategies.Update(strategy);
-            await _context.SaveChangesAsync();
+            _unitOfWork.Strategies.Update(strategy);
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Strategy {StrategyId} toggled to {IsActive} for user {UserId}", 
                 strategyId, strategy.IsActive, userId);

@@ -21,6 +21,7 @@
 
   <ItemGroup>
 	<ProjectReference Include="..\WinWigApp.Domain\WinWigApp.Domain.csproj" />
+	<ProjectReference Include="..\WinWigApp.Infrastructure\WinWigApp.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Linq;
-using WinWigApp.Server.Data;
-using WinWigApp.Server.DTOs;
-using WinWigApp.Server.Models;
+using WinWigApp.Infrastructure.Data;
+using WinWigApp.Application.DTOs;
+using WinWigApp.Domain.Entities;
 
 namespace WinWigApp.Server.Controllers;
 

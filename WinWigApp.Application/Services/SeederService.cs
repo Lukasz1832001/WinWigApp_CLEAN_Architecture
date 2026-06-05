@@ -1,4 +1,4 @@
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -6,12 +6,12 @@ namespace WinWigApp.Application.Services;
 
 public class SeederService : ISeederService
 {
-    private readonly WinWigDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<SeederService> _logger;
 
-    public SeederService(WinWigDbContext context, ILogger<SeederService> logger)
+    public SeederService(IUnitOfWork unitOfWork, ILogger<SeederService> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -20,8 +20,8 @@ public class SeederService : ISeederService
         try
         {
             // Sprawdź czy użytkownik już ma strategie
-            var existingStrategies = _context.Strategies.Any(s => s.UserId == userId);
-            if (existingStrategies)
+            var existingStrategies = await _unitOfWork.Strategies.FindAsync(s => s.UserId == userId);
+            if (existingStrategies.Any())
             {
                 _logger.LogInformation("User {UserId} already has strategies, skipping seed", userId);
                 return;
@@ -78,8 +78,8 @@ public class SeederService : ISeederService
                 }
             };
 
-            _context.Strategies.AddRange(strategies);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.Strategies.AddRangeAsync(strategies);
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Successfully seeded 3 default strategies for user {UserId}", userId);
         }

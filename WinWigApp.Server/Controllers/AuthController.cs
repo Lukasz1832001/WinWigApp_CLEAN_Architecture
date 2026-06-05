@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using WinWigApp.Server.DTOs;
-using WinWigApp.Server.Services;
+using WinWigApp.Application.DTOs;
+using WinWigApp.Application.Services;
 
 namespace WinWigApp.Server.Controllers;
 
