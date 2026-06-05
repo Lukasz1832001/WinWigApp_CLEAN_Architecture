@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.6.11806.211 stable
+VisualStudioVersion = 18.6.11806.211
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "winwigapp.client", "winwigapp.client\winwigapp.client.esproj", "{8817E644-6028-881F-DE59-D1AC8AC2CB17}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinWigApp.Server", "WinWigApp.Server\WinWigApp.Server.csproj", "{914A5966-5317-1245-2136-965FE0E9A344}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinWigApp.WebAPI", "WinWigApp.Server\WinWigApp.WebAPI.csproj", "{914A5966-5317-1245-2136-965FE0E9A344}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinWigApp.Application", "WinWigApp.Application\WinWigApp.Application.csproj", "{4FC4DA78-854C-5DA2-46A6-2A61BDAE4AF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinWigApp.Infrastructure", "WinWigApp.Infrastructure\WinWigApp.Infrastructure.csproj", "{B12F22E4-2BF8-FA43-AB20-E440BA0C3A26}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinWigApp.Domain", "WinWigApp.Domain\WinWigApp.Domain.csproj", "{399AE877-01CD-49EF-88FA-0C2E06DA15CD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,8 +28,23 @@ Global
 		{914A5966-5317-1245-2136-965FE0E9A344}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{914A5966-5317-1245-2136-965FE0E9A344}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{914A5966-5317-1245-2136-965FE0E9A344}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FC4DA78-854C-5DA2-46A6-2A61BDAE4AF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FC4DA78-854C-5DA2-46A6-2A61BDAE4AF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FC4DA78-854C-5DA2-46A6-2A61BDAE4AF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FC4DA78-854C-5DA2-46A6-2A61BDAE4AF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B12F22E4-2BF8-FA43-AB20-E440BA0C3A26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B12F22E4-2BF8-FA43-AB20-E440BA0C3A26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B12F22E4-2BF8-FA43-AB20-E440BA0C3A26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B12F22E4-2BF8-FA43-AB20-E440BA0C3A26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{399AE877-01CD-49EF-88FA-0C2E06DA15CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{399AE877-01CD-49EF-88FA-0C2E06DA15CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{399AE877-01CD-49EF-88FA-0C2E06DA15CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{399AE877-01CD-49EF-88FA-0C2E06DA15CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8EE55CBE-A632-41A5-9E3F-07B0E2E648E2}
 	EndGlobalSection
 EndGlobal

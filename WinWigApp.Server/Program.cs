@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using WinWigApp.Server.Data;
-using WinWigApp.Server.Services;
+using WinWigApp.Infrastructure.Data;
+using WinWigApp.Application.Services;
 using WinWigApp.Server.Middleware;
 using WinWigApp.Server.Filters;
 using FluentValidation;
-using WinWigApp.Server.Validators;
-using WinWigApp.Server.Mapping;
+using WinWigApp.Application.Validators;
+using WinWigApp.Application.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
