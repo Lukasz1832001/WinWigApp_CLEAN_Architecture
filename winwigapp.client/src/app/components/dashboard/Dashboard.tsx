@@ -1,334 +1,333 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
 import { getStocks, StockResponse } from "../../utils/stocksApi";
-import { useNotifications, type Notification } from "../../hooks/useNotifications";
 import {
-  Search,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpDown,
-  Filter,
-  ChevronRight,
+    Search,
+    TrendingUp,
+    TrendingDown,
+    ArrowUpDown,
+    Filter,
+    ChevronRight,
 } from "lucide-react";
 
 type SortField = "symbol" | "currentPrice" | "volume" | "changePercent";
 type SortDirection = "asc" | "desc";
 
 export function Dashboard() {
-  const { notifications } = useNotifications();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<SortField>("symbol");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
-  const [showFilters, setShowFilters] = useState(false);
-  const [stocks, setStocks] = useState<StockResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortField, setSortField] = useState<SortField>("symbol");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+    const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
+    const [showFilters, setShowFilters] = useState(false);
+    const [stocks, setStocks] = useState<StockResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  // Mapuj notyfikacje na rekomendacje
-  const getRecommendationForStock = (symbol: string) => {
-    const notification = notifications.find((n) => n.symbol === symbol);
-    if (!notification) return null;
+    // Pobierz dane spółek z backendu
+    useEffect(() => {
+        const fetchStocks = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const data = await getStocks();
+                setStocks(data);
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Nie udało się pobrać danych akcji";
+                setError(errorMessage);
+                console.error("Error loading stocks:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const typeMap: Record<string, string> = {
-      "Buy": "KUP",
-      "Sell": "SPRZEDAJ",
+        fetchStocks();
+    }, []);
+
+    const filteredAndSortedStocks = useMemo(() => {
+        let filtered = stocks.filter((stock) => {
+            const matchesSearch =
+                stock.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                stock.symbol.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesPrice =
+                (!priceFilter.min || stock.currentPrice >= parseFloat(priceFilter.min)) &&
+                (!priceFilter.max || stock.currentPrice <= parseFloat(priceFilter.max));
+
+            return matchesSearch && matchesPrice;
+        });
+
+        filtered.sort((a, b) => {
+            let aVal = a[sortField];
+            let bVal = b[sortField];
+
+            if (sortDirection === "asc") {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+
+        return filtered;
+    }, [stocks, searchTerm, sortField, sortDirection, priceFilter]);
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            setSortField(field);
+            setSortDirection("asc");
+        }
     };
 
-    const colorMap: Record<string, string> = {
-      "Buy": "bg-green-500/10 border-green-500/20 text-green-400",
-      "Sell": "bg-red-500/10 border-red-500/20 text-red-400",
-    };
-
-    return {
-      text: typeMap[notification.type] || "CZEKAJ",
-      color: colorMap[notification.type] || "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
-      message: notification.message,
-    };
-  };
-
-  useEffect(() => {
-    const fetchStocks = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getStocks();
-        setStocks(data);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Nie udało się pobrać danych akcji";
-        setError(errorMessage);
-        console.error("Error loading stocks:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStocks();
-  }, []);
-
-  const filteredAndSortedStocks = useMemo(() => {
-    let filtered = stocks.filter((stock) => {
-      const matchesSearch =
-        stock.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stock.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesPrice =
-        (!priceFilter.min || stock.currentPrice >= parseFloat(priceFilter.min)) &&
-        (!priceFilter.max || stock.currentPrice <= parseFloat(priceFilter.max));
-
-      return matchesSearch && matchesPrice;
-    });
-
-    filtered.sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-
-      if (sortDirection === "asc") {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-
-    return filtered;
-  }, [stocks, searchTerm, sortField, sortDirection, priceFilter]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4 text-gray-500" />;
-    }
-    return (
-      <ArrowUpDown
-        className={`w-4 h-4 text-emerald-500 ${
-          sortDirection === "desc" ? "rotate-180" : ""
-        }`}
-      />
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Spółki WIG20</h1>
-          <p className="text-gray-400 mt-1">
-            Lista spółek z indeksu WIG20
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400">
-          <p className="font-medium">Błąd ładowania danych</p>
-          <p className="text-sm mt-1">{error}</p>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-gray-400">
-              <div className="animate-spin rounded-full h-8 w-8 border border-gray-700 border-t-emerald-500 mx-auto mb-4"></div>
-              <p>Ładowanie danych...</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Szukaj spółki po nazwie lub symbolu..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="w-4 h-4 text-gray-500" />;
+        }
+        return (
+            <ArrowUpDown
+                className={`w-4 h-4 text-emerald-500 ${sortDirection === "desc" ? "rotate-180" : ""
+                    }`}
             />
-          </div>
+        );
+    };
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-3 rounded-lg border transition-colors flex items-center gap-2 ${
-              showFilters
-                ? "bg-emerald-500 border-emerald-500 text-white"
-                : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600"
-            }`}
-          >
-            <Filter className="w-5 h-5" />
-            Filtry
-          </button>
-        </div>
+    // Mapuj rekomendację z API na badge z kolorem
+    const getRecommendationBadge = (stock: StockResponse) => {
+        const recommendation = stock.recommendation || "Czekaj";
+        const score = stock.recommendationScore || 0;
+        const reason = stock.recommendationReason || "";
 
-        {showFilters && (
-          <div className="bg-gray-800 rounded-lg p-4 mb-4 border border-gray-700">
-            <h3 className="text-white font-medium mb-3">Filtruj po cenie</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Cena minimalna (PLN)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={priceFilter.min}
-                  onChange={(e) =>
-                    setPriceFilter({ ...priceFilter, min: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Cena maksymalna (PLN)
-                </label>
-                <input
-                  type="number"
-                  placeholder="∞"
-                  value={priceFilter.max}
-                  onChange={(e) =>
-                    setPriceFilter({ ...priceFilter, max: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+        let color = "bg-gray-500/10 border-gray-500/20 text-gray-400";
+        let displayText = recommendation;
+
+        if (recommendation === "Kup") {
+            color = "bg-green-500/10 border-green-500/20 text-green-400";
+        } else if (recommendation === "Sprzedaj") {
+            color = "bg-red-500/10 border-red-500/20 text-red-400";
+        } else if (recommendation === "Czekaj") {
+            color = "bg-yellow-500/10 border-yellow-500/20 text-yellow-400";
+        }
+
+        const title = reason ? `${reason} (Score: ${score})` : `Score: ${score}`;
+
+        return {
+            color,
+            displayText,
+            title
+        };
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Spółki WIG20</h1>
+                    <p className="text-gray-400 mt-1">
+                        Lista spółek z indeksu WIG20
+                    </p>
+                </div>
             </div>
-          </div>
-        )}
 
-        <div className="text-sm text-gray-400 mb-4">
-          Znaleziono: {filteredAndSortedStocks.length} spółek
-        </div>
+            {error && (
+                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400">
+                    <p className="font-medium">Błąd ładowania danych</p>
+                    <p className="text-sm mt-1">{error}</p>
+                </div>
+            )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left py-3 px-4">
-                  <button
-                    onClick={() => handleSort("symbol")}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    Symbol
-                    <SortIcon field="symbol" />
-                  </button>
-                </th>
-                <th className="text-left py-3 px-4 hidden md:table-cell">
-                  <span className="text-gray-400">Nazwa</span>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort("currentPrice")}
-                    className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
-                  >
-                    Kurs
-                    <SortIcon field="currentPrice" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4">
-                  <button
-                    onClick={() => handleSort("changePercent")}
-                    className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
-                  >
-                    Zmiana
-                    <SortIcon field="changePercent" />
-                  </button>
-                </th>
-                <th className="text-right py-3 px-4 hidden lg:table-cell">
-                  <button
-                    onClick={() => handleSort("volume")}
-                    className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
-                  >
-                    Wolumen
-                    <SortIcon field="volume" />
-                  </button>
-                </th>
-                <th className="text-center py-3 px-4">
-                  <span className="text-gray-400">Rekomendacja</span>
-                </th>
-                <th className="text-right py-3 px-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAndSortedStocks.map((stock) => (
-                <tr
-                  key={stock.symbol}
-                  className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="py-4 px-4">
-                    <div className="font-medium text-white">{stock.symbol}</div>
-                  </td>
-                  <td className="py-4 px-4 hidden md:table-cell">
-                    <div className="text-gray-400 text-sm">{stock.name}</div>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="text-white font-medium">
-                      {stock.currentPrice.toLocaleString("pl-PL", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      PLN
+            {loading ? (
+                <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+                    <div className="flex items-center justify-center py-12">
+                        <div className="text-gray-400">
+                            <div className="animate-spin rounded-full h-8 w-8 border border-gray-700 border-t-emerald-500 mx-auto mb-4"></div>
+                            <p>Ładowanie danych...</p>
+                        </div>
                     </div>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <div
-                      className={`flex items-center justify-end gap-1 ${
-                        stock.changePercent >= 0 ? "text-emerald-500" : "text-red-500"
-                      }`}
-                    >
-                      {stock.changePercent >= 0 ? (
-                        <TrendingUp className="w-4 h-4" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4" />
-                      )}
-                      <span className="font-medium">
-                        {stock.changePercent >= 0 ? "+" : ""}
-                        {stock.changePercent.toFixed(2)}%
-                      </span>
+                </div>
+            ) : (
+                <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+                    <div className="flex flex-col md:flex-row gap-4 mb-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="Szukaj spółki po nazwie lub symbolu..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                            />
+                        </div>
+
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`px-4 py-3 rounded-lg border transition-colors flex items-center gap-2 ${showFilters
+                                    ? "bg-emerald-500 border-emerald-500 text-white"
+                                    : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600"
+                                }`}
+                        >
+                            <Filter className="w-5 h-5" />
+                            Filtry
+                        </button>
                     </div>
-                  </td>
-                  <td className="py-4 px-4 text-right hidden lg:table-cell">
-                    <div className="text-gray-400 text-sm">
-                      {stock.volume.toLocaleString("pl-PL")}
+
+                    {showFilters && (
+                        <div className="bg-gray-800 rounded-lg p-4 mb-4 border border-gray-700">
+                            <h3 className="text-white font-medium mb-3">Filtruj po cenie</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Cena minimalna (PLN)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={priceFilter.min}
+                                        onChange={(e) =>
+                                            setPriceFilter({ ...priceFilter, min: e.target.value })
+                                        }
+                                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Cena maksymalna (PLN)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder="∞"
+                                        value={priceFilter.max}
+                                        onChange={(e) =>
+                                            setPriceFilter({ ...priceFilter, max: e.target.value })
+                                        }
+                                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="text-sm text-gray-400 mb-4">
+                        Znaleziono: {filteredAndSortedStocks.length} spółek
                     </div>
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    {(() => {
-                      const rec = getRecommendationForStock(stock.symbol);
-                      return rec ? (
-                        <span title={rec.message} className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border cursor-help ${rec.color}`}>
-                          {rec.text}
-                        </span>
-                      ) : (
-                        <span className="text-gray-600 text-xs">-</span>
-                      );
-                    })()}
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <Link
-                      to={`/stock/${stock.symbol}`}
-                      className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition-colors text-sm"
-                    >
-                      Szczegóły
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-gray-800">
+                                    <th className="text-left py-3 px-4">
+                                        <button
+                                            onClick={() => handleSort("symbol")}
+                                            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            Symbol
+                                            <SortIcon field="symbol" />
+                                        </button>
+                                    </th>
+                                    <th className="text-left py-3 px-4 hidden md:table-cell">
+                                        <span className="text-gray-400">Nazwa</span>
+                                    </th>
+                                    <th className="text-right py-3 px-4">
+                                        <button
+                                            onClick={() => handleSort("currentPrice")}
+                                            className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            Kurs
+                                            <SortIcon field="currentPrice" />
+                                        </button>
+                                    </th>
+                                    <th className="text-right py-3 px-4">
+                                        <button
+                                            onClick={() => handleSort("changePercent")}
+                                            className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            Zmiana
+                                            <SortIcon field="changePercent" />
+                                        </button>
+                                    </th>
+                                    <th className="text-right py-3 px-4 hidden lg:table-cell">
+                                        <button
+                                            onClick={() => handleSort("volume")}
+                                            className="flex items-center gap-2 ml-auto text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            Wolumen
+                                            <SortIcon field="volume" />
+                                        </button>
+                                    </th>
+                                    <th className="text-center py-3 px-4">
+                                        <span className="text-gray-400">Rekomendacja</span>
+                                    </th>
+                                    <th className="text-right py-3 px-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAndSortedStocks.map((stock) => {
+                                    const badge = getRecommendationBadge(stock);
+                                    return (
+                                        <tr
+                                            key={stock.symbol}
+                                            className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
+                                        >
+                                            <td className="py-4 px-4">
+                                                <div className="font-medium text-white">{stock.symbol}</div>
+                                            </td>
+                                            <td className="py-4 px-4 hidden md:table-cell">
+                                                <div className="text-gray-400 text-sm">{stock.name}</div>
+                                            </td>
+                                            <td className="py-4 px-4 text-right">
+                                                <div className="text-white font-medium">
+                                                    {stock.currentPrice.toLocaleString("pl-PL", {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    })}{" "}
+                                                    PLN
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4 text-right">
+                                                <div
+                                                    className={`flex items-center justify-end gap-1 ${stock.changePercent >= 0 ? "text-emerald-500" : "text-red-500"
+                                                        }`}
+                                                >
+                                                    {stock.changePercent >= 0 ? (
+                                                        <TrendingUp className="w-4 h-4" />
+                                                    ) : (
+                                                        <TrendingDown className="w-4 h-4" />
+                                                    )}
+                                                    <span className="font-medium">
+                                                        {stock.changePercent >= 0 ? "+" : ""}
+                                                        {stock.changePercent.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4 text-right hidden lg:table-cell">
+                                                <div className="text-gray-400 text-sm">
+                                                    {stock.volume.toLocaleString("pl-PL")}
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-4 text-center">
+                                                <span
+                                                    title={badge.title}
+                                                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border cursor-help ${badge.color}`}
+                                                >
+                                                    {badge.displayText}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-4 text-right">
+                                                <Link
+                                                    to={`/stock/${stock.symbol}`}
+                                                    className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition-colors text-sm"
+                                                >
+                                                    Szczegóły
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
-        </div>
-      )}
-    </div>
-  );
+    );
 }

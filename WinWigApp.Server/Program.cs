@@ -33,6 +33,7 @@ builder.Services.AddHttpClient<IYahooFinanceClient, YahooFinanceClient>(client =
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddScoped<ITechnicalRecommendationService, TechnicalRecommendationService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IStrategyService, StrategyService>();
 builder.Services.AddScoped<IStrategyExecutionService, StrategyExecutionService>();
@@ -78,83 +79,43 @@ builder.Services
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-        // Dla SignalR - obsługuj token z query string
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    (context.HttpContext.WebSockets.IsWebSocketRequest || context.Request.Headers["Connection"] == "Upgrade"))
-                {
-                    context.Token = accessToken;
-                }
-                return Task.CompletedTask;
-            }
         };
     });
 
+// Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowReactApp", builder =>
     {
-        builder.WithOrigins(
-            "http://localhost:5262",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://localhost:7054",
-            "https://localhost:3000"
-        )
+        builder
+            .WithOrigins("http://localhost:5173", "http://localhost:3000")
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials(); // Wymagane dla WebSocket
+            .AllowCredentials();
     });
 });
 
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<ValidationFilter>();
-})
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-    });
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Add Controllers
+builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>());
 
 var app = builder.Build();
 
-// Add exception handling middleware
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-// Initialize database
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<WinWigDbContext>();
-    dbContext.Database.EnsureCreated();
-}
-
-app.UseDefaultFiles();
-app.MapStaticAssets();
-
-app.UseCors("AllowAll");
-
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // Swagger/OpenAPI temporarily disabled due to Microsoft.OpenApi version conflict.
+    // app.UseSwagger();
+    // app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowReactApp");
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
-
-app.MapFallbackToFile("/index.html");
 
 app.Run();

@@ -13,4 +13,9 @@ public class StockResponse
     public decimal Roe { get; set; }
     public decimal Change { get; set; }
     public decimal ChangePercent { get; set; }
+    
+    // Nowe pola dla rekomendacji Dashboard
+    public string Recommendation { get; set; } = "Czekaj";
+    public int RecommendationScore { get; set; }
+    public string RecommendationReason { get; set; } = string.Empty;
 }

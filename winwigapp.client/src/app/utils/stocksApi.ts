@@ -11,6 +11,9 @@ export interface StockResponse {
   roe: number;
   change: number;
   changePercent: number;
+  recommendation: string;
+  recommendationScore: number;
+  recommendationReason: string;
 }
 
 export interface CandlestickData {
