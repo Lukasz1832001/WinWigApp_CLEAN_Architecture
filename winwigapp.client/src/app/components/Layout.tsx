@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router";
 import {
   LayoutDashboard,
@@ -7,12 +7,11 @@ import {
   Wallet,
   History,
   LogOut,
-  Bell,
   Menu,
   X,
 } from "lucide-react";
 import { useUser } from "../context/UserContext";
-import { useState } from "react";
+import { NotificationsPanel } from "./notifications/NotificationsPanel";
 
 export function Layout() {
   const navigate = useNavigate();
@@ -91,6 +90,7 @@ export function Layout() {
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
+              <NotificationsPanel />
 
               <div className="flex items-center space-x-3 px-4 py-2 bg-gray-800 rounded-lg">
                 <div className="text-right">

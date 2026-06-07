@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { getStocks, StockResponse } from "../../utils/stocksApi";
+import { getStocks, StockResponse, getTechnicalIndicators } from "../../utils/stocksApi";
+import { useNotifications, type Notification } from "../../hooks/useNotifications";
+import { strategiesApi, StrategyResponse as Strategy } from "../../utils/strategiesApi";
 import {
   Briefcase,
   TrendingUp,
@@ -30,6 +32,7 @@ interface PortfolioResponse {
 
 export function Portfolio() {
   const { user } = useUser();
+  const { notifications } = useNotifications();
   const [portfolio, setPortfolio] = useState<PortfolioResponse>({
     items: [],
     totalValue: 0,
@@ -38,10 +41,123 @@ export function Portfolio() {
     totalProfitPercent: 0,
   });
   const [stocks, setStocks] = useState<StockResponse[]>([]);
+  const [activeStrategies, setActiveStrategies] = useState<Strategy[]>([]);
+  const [recommendations, setRecommendations] = useState<Record<string, any>>({});
   const [editingStopLoss, setEditingStopLoss] = useState<string | null>(null);
   const [newStopLoss, setNewStopLoss] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [updatingStopLoss, setUpdatingStopLoss] = useState<string | null>(null);
+
+  // Mapuj notyfikacje na rekomendacje
+  const getRecommendationForStock = (symbol: string) => {
+    const notification = notifications.find((n) => n.symbol === symbol);
+    if (!notification) return null;
+
+    const typeMap: Record<string, string> = {
+      "Buy": "KUP",
+      "Sell": "SPRZEDAJ",
+    };
+
+    const colorMap: Record<string, string> = {
+      "Buy": "bg-green-500/10 border-green-500/20 text-green-400",
+      "Sell": "bg-red-500/10 border-red-500/20 text-red-400",
+    };
+
+    return {
+      text: typeMap[notification.type] || "CZEKAJ",
+      color: colorMap[notification.type] || "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+      message: notification.message,
+    };
+  };
+
+  // Funkcja do generowania rekomendacji na podstawie wskaźników technicznych
+  const getStockRecommendation = (
+    technicals: any,
+    allowSell: boolean = false,
+    strategy?: any
+  ) => {
+    if (!technicals || !technicals.rsi || !technicals.macd || !technicals.sma50 || !technicals.sma200) {
+      console.warn("Missing technicals data", { technicals });
+      return {
+        text: "BRAK",
+        color: "bg-gray-500/10 border-gray-500/20 text-gray-400",
+      };
+    }
+
+    // Pobierz ostatnie wartości wskaźników
+    const lastRsi = Array.isArray(technicals.rsi) ? technicals.rsi[technicals.rsi.length - 1] : technicals.rsi;
+    const lastMacdObj = Array.isArray(technicals.macd) ? technicals.macd[technicals.macd.length - 1] : technicals.macd;
+    const lastSma50 = Array.isArray(technicals.sma50) ? technicals.sma50[technicals.sma50.length - 1] : technicals.sma50;
+    const lastSma200 = Array.isArray(technicals.sma200) ? technicals.sma200[technicals.sma200.length - 1] : technicals.sma200;
+
+    // MACD histogram (obsłuż zarówno snake_case jak i camelCase)
+    const macdHistogram = lastMacdObj?.Histogram ?? lastMacdObj?.histogram ?? 0;
+
+    // Jeśli nie ma strategii, użyj domyślnych parametrów
+    const rsiLow = strategy?.rsiLow ?? 30;
+    const rsiHigh = strategy?.rsiHigh ?? 70;
+    const macdBuy = strategy?.macdBuy ?? true;
+    const sma50Above200 = strategy?.sma50Above200 ?? true;
+
+    console.log("Stock recommendation analysis:", {
+      symbol: technicals.currentPrice ? "N/A" : "N/A",
+      lastRsi,
+      macdHistogram,
+      lastSma50,
+      lastSma200,
+      strategy: { rsiLow, rsiHigh, macdBuy, sma50Above200 },
+    });
+
+    // Sprawdź sygnał BUY
+    // Warunek 1: RSI < RsiLow (niedowartościowana)
+    // Warunek 2: Jeśli strategia wymaga MACD buy -> histogram > 0
+    // Warunek 3: Jeśli strategia wymaga SMA50>SMA200 -> sma50 > sma200
+    const buySignal =
+      lastRsi < rsiLow &&
+      (!macdBuy || macdHistogram > 0) &&
+      (!sma50Above200 || lastSma50 > lastSma200);
+
+    // Sprawdź sygnał SELL (jeśli dozwolony)
+    // Warunek 1: RSI > RsiHigh (wykupiona)
+    // Warunek 2: Jeśli strategia wymaga MACD buy -> histogram < 0 (odwrotnie)
+    // Warunek 3: Jeśli strategia wymaga SMA50>SMA200 -> sma50 < sma200 (odwrotnie)
+    const sellSignal =
+      allowSell &&
+      lastRsi > rsiHigh &&
+      (!macdBuy || macdHistogram < 0) &&
+      (!sma50Above200 || lastSma50 < lastSma200);
+
+    console.log("Signal check:", { buySignal, sellSignal });
+
+    if (buySignal) {
+      return {
+        text: "KUP",
+        color: "bg-green-500/10 border-green-500/20 text-green-400",
+      };
+    }
+
+    if (sellSignal) {
+      return {
+        text: "SPRZEDAJ",
+        color: "bg-red-500/10 border-red-500/20 text-red-400",
+      };
+    }
+
+    return {
+      text: "CZEKAJ",
+      color: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+    };
+  };
+
+  const getRecommendationColor = (rec: any) => {
+    if (!rec) return "";
+    return rec.color || "bg-gray-500/10 border-gray-500/20 text-gray-400";
+  };
+
+  const getRecommendationText = (rec: any) => {
+    if (!rec) return "";
+    return rec.text || "BRAK";
+  };
 
   useEffect(() => {
     loadPortfolio();
@@ -63,6 +179,61 @@ export function Portfolio() {
     try {
       const data = await getStocks();
       setStocks(data);
+
+      // Pobierz aktywne strategie NAJPIERW
+      let strategies: Strategy[] = [];
+      try {
+        const allStrategies = await strategiesApi.getStrategies();
+        strategies = allStrategies.filter((s) => s.isActive);
+        setActiveStrategies(strategies);
+        console.log("Active strategies loaded:", strategies);
+      } catch (strategyErr) {
+        console.warn("Nie udało się pobrać strategii:", strategyErr);
+      }
+
+      // Fetch recommendations for stocks (non-blocking)
+      data.forEach((stock) => {
+        (async () => {
+          try {
+            const technicals = await getTechnicalIndicators(stock.symbol, 90);
+            console.log(`Technicals for ${stock.symbol}:`, technicals);
+
+            // Użyj pobranej strategii, a nie state (unika race condition)
+            const strategy = strategies.length > 0 ? strategies[0] : undefined;
+            console.log(`Strategy for ${stock.symbol}:`, strategy);
+
+            const recommendation = getStockRecommendation(
+              {
+                ...technicals,
+                currentPrice: stock.currentPrice,
+              },
+              true, // Portfolio mode: allow SELL recommendation
+              strategy ? {
+                rsiLow: strategy.rsiLow,
+                rsiHigh: strategy.rsiHigh,
+                macdBuy: strategy.macdBuy,
+                sma50Above200: strategy.sma50Above200,
+              } : undefined
+            );
+
+            console.log(`Recommendation for ${stock.symbol}:`, recommendation);
+
+            setRecommendations((prev) => ({
+              ...prev,
+              [stock.symbol]: recommendation,
+            }));
+          } catch (err) {
+            console.warn(`Failed to get recommendation for ${stock.symbol}:`, err);
+            setRecommendations((prev) => ({
+              ...prev,
+              [stock.symbol]: {
+                text: "BŁĄD",
+                color: "bg-red-500/10 border-red-500/20 text-red-400",
+              },
+            }));
+          }
+        })();
+      });
     } catch (error) {
       console.error("Error loading stocks:", error);
       toast.error("Nie udało się pobrać danych akcji");
@@ -220,7 +391,14 @@ export function Portfolio() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Mój Portfel</h1>
-        <p className="text-gray-400 mt-1">Przegląd Twoich inwestycji</p>
+        <p className="text-gray-400 mt-1">
+          Przegląd Twoich inwestycji
+          {activeStrategies.length > 0 && (
+            <span className="ml-2 text-emerald-400">
+              • Aktywna strategia: <span className="font-semibold">{activeStrategies[0].name}</span>
+            </span>
+          )}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -299,6 +477,7 @@ export function Portfolio() {
                   <th className="text-right py-3 px-4 text-gray-400">Akt. cena</th>
                   <th className="text-right py-3 px-4 text-gray-400">Wartość</th>
                   <th className="text-right py-3 px-4 text-gray-400">Zysk/Strata</th>
+                  <th className="text-center py-3 px-4 text-gray-400">Rekomendacja</th>
                   <th className="text-right py-3 px-4 text-gray-400">Stop Loss</th>
                 </tr>
               </thead>
@@ -357,6 +536,15 @@ export function Portfolio() {
                             {profit.percent.toFixed(2)}%
                           </div>
                         </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        {recommendations[position.symbol] ? (
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getRecommendationColor(recommendations[position.symbol])}`}>
+                            {getRecommendationText(recommendations[position.symbol])}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 text-xs">Ładowanie...</span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-right">
                         {editingStopLoss === position.symbol ? (

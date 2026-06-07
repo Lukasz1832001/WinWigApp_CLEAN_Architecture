@@ -12,11 +12,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { strategiesApi, StrategyResponse as Strategy } from "../../utils/strategiesApi";
+import { useNotifications } from "../../hooks/useNotifications";
 
 export function Strategies() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
+  const { loadNotifications } = useNotifications();
   const [formData, setFormData] = useState({
     name: "",
     targetReturn: "10",
@@ -177,11 +179,18 @@ export function Strategies() {
   const toggleActive = async (id: string) => {
     try {
       const response = await strategiesApi.toggleStrategy(id);
-      const updated = strategies.map((s) =>
-        s.id === id ? { ...s, isActive: response.isActive } : s
-      );
-      setStrategies(updated);
+
+      // Przeładuj wszystkie strategie aby zobaczyć które zostały wyłączone
+      await loadStrategies();
+
       toast.success(response.message);
+
+      // Jeśli strategia została aktywowana, odśwież powiadomienia po krótkim opóźnieniu
+      if (response.isActive) {
+        setTimeout(() => {
+          loadNotifications();
+        }, 1500); // Poczekaj 1.5 sekundy, aby serwer miał czas na utworzenie powiadomień
+      }
     } catch (error) {
       console.error("Error toggling strategy:", error);
       toast.error(error instanceof Error ? error.message : "Błąd podczas przełączania strategii");

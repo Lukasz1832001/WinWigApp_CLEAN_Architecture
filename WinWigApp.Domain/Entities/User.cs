@@ -15,4 +15,5 @@ public class User
     public ICollection<Portfolio> Portfolios { get; set; } = [];
     public ICollection<Deposit> Deposits { get; set; } = [];
     public ICollection<Strategy> Strategies { get; set; } = [];
+    public ICollection<Notification> Notifications { get; set; } = [];
 }

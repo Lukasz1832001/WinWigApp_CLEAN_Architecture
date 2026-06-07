@@ -14,6 +14,7 @@ public class WinWigDbContext : DbContext
     public DbSet<Portfolio> Portfolios { get; set; }
     public DbSet<Deposit> Deposits { get; set; }
     public DbSet<Strategy> Strategies { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,6 +64,20 @@ public class WinWigDbContext : DbContext
             .HasOne(s => s.User)
             .WithMany(u => u.Strategies)
             .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Notification configuration
+        modelBuilder.Entity<Notification>()
+            .HasKey(n => n.Id);
+        modelBuilder.Entity<Notification>()
+            .HasOne(n => n.User)
+            .WithMany(u => u.Notifications)
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Notification>()
+            .HasOne(n => n.Strategy)
+            .WithMany(s => s.Notifications)
+            .HasForeignKey(n => n.StrategyId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

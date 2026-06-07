@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     private IPortfolioRepository? _portfolioRepository;
     private IDepositRepository? _depositRepository;
     private IStrategyRepository? _strategyRepository;
+    private INotificationRepository? _notificationRepository;
 
     public UnitOfWork(WinWigDbContext context)
     {
@@ -25,6 +26,7 @@ public class UnitOfWork : IUnitOfWork
     public IPortfolioRepository Portfolios => _portfolioRepository ??= new PortfolioRepository(_context);
     public IDepositRepository Deposits => _depositRepository ??= new DepositRepository(_context);
     public IStrategyRepository Strategies => _strategyRepository ??= new StrategyRepository(_context);
+    public INotificationRepository Notifications => _notificationRepository ??= new NotificationRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
 import { getStocks, StockResponse } from "../../utils/stocksApi";
+import { useNotifications, type Notification } from "../../hooks/useNotifications";
 import {
   Search,
   TrendingUp,
@@ -14,6 +15,7 @@ type SortField = "symbol" | "currentPrice" | "volume" | "changePercent";
 type SortDirection = "asc" | "desc";
 
 export function Dashboard() {
+  const { notifications } = useNotifications();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>("symbol");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -22,6 +24,28 @@ export function Dashboard() {
   const [stocks, setStocks] = useState<StockResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mapuj notyfikacje na rekomendacje
+  const getRecommendationForStock = (symbol: string) => {
+    const notification = notifications.find((n) => n.symbol === symbol);
+    if (!notification) return null;
+
+    const typeMap: Record<string, string> = {
+      "Buy": "KUP",
+      "Sell": "SPRZEDAJ",
+    };
+
+    const colorMap: Record<string, string> = {
+      "Buy": "bg-green-500/10 border-green-500/20 text-green-400",
+      "Sell": "bg-red-500/10 border-red-500/20 text-red-400",
+    };
+
+    return {
+      text: typeMap[notification.type] || "CZEKAJ",
+      color: colorMap[notification.type] || "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+      message: notification.message,
+    };
+  };
 
   useEffect(() => {
     const fetchStocks = async () => {
@@ -228,7 +252,9 @@ export function Dashboard() {
                     <SortIcon field="volume" />
                   </button>
                 </th>
-               
+                <th className="text-center py-3 px-4">
+                  <span className="text-gray-400">Rekomendacja</span>
+                </th>
                 <th className="text-right py-3 px-4"></th>
               </tr>
             </thead>
@@ -275,7 +301,18 @@ export function Dashboard() {
                       {stock.volume.toLocaleString("pl-PL")}
                     </div>
                   </td>
-                  
+                  <td className="py-4 px-4 text-center">
+                    {(() => {
+                      const rec = getRecommendationForStock(stock.symbol);
+                      return rec ? (
+                        <span title={rec.message} className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border cursor-help ${rec.color}`}>
+                          {rec.text}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">-</span>
+                      );
+                    })()}
+                  </td>
                   <td className="py-4 px-4 text-right">
                     <Link
                       to={`/stock/${stock.symbol}`}

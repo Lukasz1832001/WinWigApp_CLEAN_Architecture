@@ -11,12 +11,16 @@ public class StrategyService : IStrategyService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<StrategyService> _logger;
     private readonly IMapper _mapper;
+    private readonly IStrategyExecutionService _strategyExecutionService;
+    private readonly INotificationHubClient _notificationHubClient;
 
-    public StrategyService(IUnitOfWork unitOfWork, ILogger<StrategyService> logger, IMapper mapper)
+    public StrategyService(IUnitOfWork unitOfWork, ILogger<StrategyService> logger, IMapper mapper, IStrategyExecutionService strategyExecutionService, INotificationHubClient notificationHubClient)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
+        _strategyExecutionService = strategyExecutionService;
+        _notificationHubClient = notificationHubClient;
     }
 
     public async Task<StrategyResponse> CreateStrategyAsync(Guid userId, CreateStrategyRequest request)
@@ -152,12 +156,66 @@ public class StrategyService : IStrategyService
             var strategy = await _unitOfWork.Strategies.FirstOrDefaultAsync(s => s.Id == strategyId && s.UserId == userId)
                 ?? throw new InvalidOperationException("Strategia nie znaleziona");
 
+            // Jeśli aktywujemy strategię, wyłącz wszystkie inne strategie użytkownika
+            if (!strategy.IsActive)
+            {
+                var otherStrategies = await _unitOfWork.Strategies.FindAsync(s => s.UserId == userId && s.IsActive && s.Id != strategyId);
+                foreach (var otherStrategy in otherStrategies)
+                {
+                    otherStrategy.IsActive = false;
+                    _unitOfWork.Strategies.Update(otherStrategy);
+                    _logger.LogInformation("Deactivated strategy {DeactivatedStrategyId} because user {UserId} activated another strategy {ActivatedStrategyId}", 
+                        otherStrategy.Id, userId, strategyId);
+                }
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             strategy.IsActive = !strategy.IsActive;
             _unitOfWork.Strategies.Update(strategy);
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Strategy {StrategyId} toggled to {IsActive} for user {UserId}", 
                 strategyId, strategy.IsActive, userId);
+
+            // Jeśli strategia jest aktywowana, uruchom analizę
+            if (strategy.IsActive)
+            {
+                _logger.LogInformation("Uruchamiam analizę dla aktywowanej strategii {StrategyId}", strategyId);
+                await _strategyExecutionService.ExecuteStrategyAsync(strategyId, userId);
+
+                // Utwórz powiadomienie potwierdzające aktywację
+                var activationNotification = new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    StrategyId = strategyId,
+                    Symbol = "SYSTEM",
+                    StockName = "System",
+                    Message = $"Strategia '{strategy.Name}' została aktywowana i rozpoczęła analizę",
+                    Type = NotificationType.Buy,
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                };
+
+                await _unitOfWork.Notifications.AddAsync(activationNotification);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Utworzono powiadomienie aktywacji dla strategii {StrategyId}", strategyId);
+
+                // Wyślij powiadomienie w czasie rzeczywistym
+                if (_notificationHubClient != null)
+                {
+                    try
+                    {
+                        var notificationDto = _mapper.Map<NotificationResponse>(activationNotification);
+                        await _notificationHubClient.SendNotificationAsync(userId, notificationDto);
+                    }
+                    catch (Exception signalREx)
+                    {
+                        _logger.LogWarning(signalREx, "Błąd przy wysyłaniu powiadomienia aktywacji przez SignalR");
+                    }
+                }
+            }
 
             return new ToggleStrategyResponse
             {

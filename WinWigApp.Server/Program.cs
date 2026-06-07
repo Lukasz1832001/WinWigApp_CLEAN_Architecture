@@ -6,6 +6,8 @@ using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.Services;
 using WinWigApp.Server.Middleware;
 using WinWigApp.Server.Filters;
+using WinWigApp.Server.Hubs;
+using WinWigApp.Server.Services;
 using FluentValidation;
 using WinWigApp.Application.Validators;
 using WinWigApp.Application.Mapping;
@@ -33,6 +35,18 @@ builder.Services.AddHttpClient<IYahooFinanceClient, YahooFinanceClient>(client =
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IStrategyService, StrategyService>();
+builder.Services.AddScoped<IStrategyExecutionService, StrategyExecutionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<INotificationHubClient, NotificationHubClient>();
+builder.Services.AddHostedService<StrategyExecutionBackgroundService>();
+
+// Register SignalR
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 64 * 1024; // 64KB
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
@@ -66,15 +80,36 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+        // Dla SignalR - obsługuj token z query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (context.HttpContext.WebSockets.IsWebSocketRequest || context.Request.Headers["Connection"] == "Upgrade"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins(
+            "http://localhost:5262",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://localhost:7054",
+            "https://localhost:3000"
+        )
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials(); // Wymagane dla WebSocket
     });
 });
 
@@ -118,6 +153,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapFallbackToFile("/index.html");
 

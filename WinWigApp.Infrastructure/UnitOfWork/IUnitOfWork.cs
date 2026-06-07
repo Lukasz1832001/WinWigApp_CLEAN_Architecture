@@ -9,6 +9,7 @@ public interface IUnitOfWork : IDisposable
     IPortfolioRepository Portfolios { get; }
     IDepositRepository Deposits { get; }
     IStrategyRepository Strategies { get; }
+    INotificationRepository Notifications { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

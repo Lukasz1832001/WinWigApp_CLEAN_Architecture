@@ -76,3 +76,25 @@ export const getTechnicalIndicators = async (symbol: string, days: number = 90) 
     throw error;
   }
 };
+
+export const getStockWithTechnicals = async (symbol: string) => {
+  try {
+    const [stocks, technicals] = await Promise.all([
+      getStocks(),
+      getTechnicalIndicators(symbol, 90)
+    ]);
+
+    const stock = stocks.find(s => s.symbol === symbol);
+    if (!stock) {
+      throw new Error(`Stock ${symbol} not found`);
+    }
+
+    return {
+      ...stock,
+      technicals
+    };
+  } catch (error) {
+    console.error(`Error fetching stock with technicals for ${symbol}:`, error);
+    throw error;
+  }
+};

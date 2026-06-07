@@ -23,5 +23,9 @@ public class MappingProfile : Profile
 
         // Portfolio mappings
         CreateMap<Portfolio, PortfolioItemResponse>();
+
+        // Notification mappings
+        CreateMap<Notification, NotificationResponse>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
     }
 }
