@@ -1,7 +1,7 @@
-using WinWigApp.Domain.Entities;
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Domain.Contracts;
+using WinWigApp.Domain.Models;
 
-namespace WinWigApp.Infrastructure.Repositories;
+namespace WinWigApp.Infrastructure.Contracts;
 
 public class DepositRepository : GenericRepository<Deposit>, IDepositRepository
 {

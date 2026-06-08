@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using WinWigApp.Domain.Entities;
-using WinWigApp.Infrastructure.UnitOfWork;
+using WinWigApp.Domain.Models;
 using WinWigApp.Application.Services;
 using WinWigApp.Application.DTOs;
 using AutoMapper;
+using WinWigApp.Domain.Contracts;
 
 namespace WinWigApp.Application.Services;
 

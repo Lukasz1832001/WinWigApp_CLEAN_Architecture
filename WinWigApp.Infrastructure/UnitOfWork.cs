@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using WinWigApp.Infrastructure.Data;
-using WinWigApp.Infrastructure.Repositories;
+using WinWigApp.Domain.Contracts;
+using WinWigApp.Infrastructure.Contracts;
 
-namespace WinWigApp.Infrastructure.UnitOfWork;
+namespace WinWigApp.Infrastructure;
 
 public class UnitOfWork : IUnitOfWork
 {

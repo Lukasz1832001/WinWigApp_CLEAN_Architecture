@@ -1,6 +1,6 @@
 using AutoMapper;
 using WinWigApp.Application.DTOs;
-using WinWigApp.Domain.Entities;
+using WinWigApp.Domain.Models;
 
 namespace WinWigApp.Application.Mapping;
 

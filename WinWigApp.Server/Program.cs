@@ -1,21 +1,20 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using WinWigApp.Infrastructure.Data;
-using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.Services;
 using WinWigApp.Server.Middleware;
 using WinWigApp.Server.Filters;
-using WinWigApp.Server.Hubs;
-using WinWigApp.Server.Services;
 using FluentValidation;
 using WinWigApp.Application.Validators;
 using WinWigApp.Application.Mapping;
+using WinWigApp.Infrastructure;
+using WinWigApp.Application.Hubs;
+using WinWigApp.Domain.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SQLite database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=WinWigApp.db";
 builder.Services.AddDbContext<WinWigDbContext>(options =>
     options.UseSqlite(connectionString));
@@ -99,6 +98,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>());
 
 var app = builder.Build();
+
+// Auto-create database if not exists
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<WinWigDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

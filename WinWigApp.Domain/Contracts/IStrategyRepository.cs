@@ -1,6 +1,6 @@
-using WinWigApp.Domain.Entities;
+using WinWigApp.Domain.Models;
 
-namespace WinWigApp.Infrastructure.Repositories;
+namespace WinWigApp.Domain.Contracts;
 
 public interface IStrategyRepository : IRepository<Strategy>
 {

@@ -19,12 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WinWigApp.Domain\WinWigApp.Domain.csproj" />
     <ProjectReference Include="..\WinWigApp.Application\WinWigApp.Application.csproj" />
     <ProjectReference Include="..\WinWigApp.Infrastructure\WinWigApp.Infrastructure.csproj" />
-    <ProjectReference Include="..\winwigapp.client\winwigapp.client.esproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-namespace WinWigApp.Domain.Entities;
+namespace WinWigApp.Domain.Models;
 
 public class User
 {

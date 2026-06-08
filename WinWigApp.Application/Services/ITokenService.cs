@@ -1,4 +1,4 @@
-using WinWigApp.Domain.Entities;
+using WinWigApp.Domain.Models;
 
 namespace WinWigApp.Application.Services
 {

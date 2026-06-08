@@ -1,6 +1,5 @@
-using WinWigApp.Domain.Entities;
-
-namespace WinWigApp.Infrastructure.Repositories;
+using WinWigApp.Domain.Models;
+namespace WinWigApp.Domain.Contracts;
 
 public interface IDepositRepository : IRepository<Deposit>
 {

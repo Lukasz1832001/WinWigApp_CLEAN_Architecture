@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using WinWigApp.Application.DTOs;
-using WinWigApp.Application.Services;
-using WinWigApp.Server.Hubs;
+using WinWigApp.Application.Hubs;
 
-namespace WinWigApp.Server.Services;
+namespace WinWigApp.Application.Services;
 
 public class NotificationHubClient : INotificationHubClient
 {

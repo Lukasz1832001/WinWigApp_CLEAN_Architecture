@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\WinWigApp.Domain\WinWigApp.Domain.csproj" />
+    <ProjectReference Include="..\WinWigApp.Application\WinWigApp.Application.csproj" />
   </ItemGroup>
 
 </Project>

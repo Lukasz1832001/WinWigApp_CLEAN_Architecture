@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
-namespace WinWigApp.Server.Hubs;
+namespace WinWigApp.Application.Hubs;
 
 [Authorize]
 public class NotificationHub : Hub

@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using WinWigApp.Infrastructure.Data;
+using WinWigApp.Domain.Contracts;
 
-namespace WinWigApp.Infrastructure.Repositories;
+namespace WinWigApp.Infrastructure.Contracts;
 
 public class GenericRepository<T> : IRepository<T> where T : class
 {

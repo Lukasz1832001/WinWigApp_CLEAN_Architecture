@@ -1,6 +1,4 @@
-using WinWigApp.Infrastructure.Repositories;
-
-namespace WinWigApp.Infrastructure.UnitOfWork;
+namespace WinWigApp.Domain.Contracts;
 
 public interface IUnitOfWork : IDisposable
 {

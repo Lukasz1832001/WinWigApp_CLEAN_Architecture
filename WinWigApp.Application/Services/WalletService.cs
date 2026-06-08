@@ -1,7 +1,7 @@
-using WinWigApp.Infrastructure.UnitOfWork;
 using WinWigApp.Application.DTOs;
-using WinWigApp.Domain.Entities;
+using WinWigApp.Domain.Models;
 using AutoMapper;
+using WinWigApp.Domain.Contracts;
 
 namespace WinWigApp.Application.Services;
 

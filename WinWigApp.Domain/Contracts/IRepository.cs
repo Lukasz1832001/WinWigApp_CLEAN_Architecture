@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace WinWigApp.Infrastructure.Repositories;
+namespace WinWigApp.Domain.Contracts;
 
 public interface IRepository<T> where T : class
 {

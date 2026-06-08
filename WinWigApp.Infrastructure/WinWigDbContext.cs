@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using WinWigApp.Domain.Entities;
+using WinWigApp.Domain.Models;
 
-namespace WinWigApp.Infrastructure.Data;
+namespace WinWigApp.Infrastructure;
 
 public class WinWigDbContext : DbContext
 {
