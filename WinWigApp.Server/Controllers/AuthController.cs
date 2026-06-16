@@ -34,7 +34,7 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Registration error");
             return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "B³¹d serwera podczas rejestracji" });
+                new { message = "BÅ‚Ä…d serwera podczas rejestracji" });
         }
     }
 
@@ -55,7 +55,7 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Login error");
             return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "B³¹d serwera podczas logowania" });
+                new { message = "BÅ‚Ä…d serwera podczas logowania" });
         }
     }
 }
